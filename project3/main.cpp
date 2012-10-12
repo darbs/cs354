@@ -22,6 +22,7 @@
 #include "./joint.h"
 #include "./loader.h"
 #include "./geom.h"
+#include "./node.h"
 
 using namespace std;
 
@@ -37,6 +38,7 @@ void Keyboard(unsigned char key, int x, int y);
 void Idle();
 
 SceneGraph sg;
+Node figure;
 
 #define PI 3.14159265f
 
@@ -52,6 +54,7 @@ float axisLen = 1.0f;
 
 bool showBounds = false;
 
+// created for camera manipulation
 double zoom = 1.025f;
 double turn = 1.025f;
 double degrees = 0.0;

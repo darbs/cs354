@@ -1,13 +1,16 @@
 #include <stdint.h>
 #include <iostream>
-
+#include "./node.h"
 #include "./joint.h"
 
 using namespace std;
+// Node root;
 
 void SceneGraph::CreateRoot(const char * name, uint32_t id) {
-  cout << "createRoot:name=" << name << " id=" << id << endl;
-  // TODO
+  Node root = Node();
+  root.id = id;
+  root.name = name;
+  cout << "createRoot:name=" << root.name << " id=" << root.id << endl;
 }
 
 void SceneGraph::CreateJoint(const char * name, uint32_t id) {
@@ -69,6 +72,7 @@ void SceneGraph::SetFrameSize(uint32_t size) {
 void SceneGraph::AddFrame(float * data) {
   cout << "addFrame" << endl;
   // TODO
+  // this->degreesOfFreedom.push_back(data);
 }
 
 void SceneGraph::SetCurrentFrame(uint32_t frameNumber) {

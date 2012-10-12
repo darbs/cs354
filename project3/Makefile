@@ -58,7 +58,7 @@ $(OBJS): %.o: %.cpp
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $< -o $@
 
 $(PROD):  $(OBJS)
-	./check-code main.cpp joint.h joint.cpp
+	./check-code main.cpp joint.h joint.cpp node.h node.cpp
 	$(CC) -o $(PROD) $^ $(LIBS)
 
 clean:
