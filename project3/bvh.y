@@ -38,7 +38,7 @@
 %type  <fval> num
 %%
 bvh:header root motion; 
-
+;
 header:HIERARCHY {
 	joints.clear();
 	last_id=0;

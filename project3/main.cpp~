@@ -53,19 +53,20 @@ float axisLen = 1.0f;
 bool showBounds = false;
 
 double zoom = 1.025f;
+double turn = 1.025f;
 double degrees = 0.0;
 double toRad = PI / 180;
 
 void RotateCamera(char dir) {
-  eye[0] = .1*cos(degrees*toRad);
-  eye[2] = .1*sin(degrees*toRad);
-  // eye = Vec3f::makeVec(x1, eye[1], z1);
   if (dir == 'l') {
-    degrees += .1;
+    degrees += turn;
   }
   if (dir == 'r') {
-    degrees -= .1;
+    degrees -= turn;
   }
+  double radius = sqrt(eye[0]*eye[0] + eye[2]*eye[2]);
+  eye[0] = radius*cos(degrees*PI/180);
+  eye[2] = radius*sin(degrees*PI/180);
 }
 
 void SetLighting();
@@ -95,10 +96,13 @@ void ComputeLookAt() {
   eye = center+Vec3f::makeVec(0.0f, 0.75f*maxDist, -1.5f*maxDist);
   if (waypoint == 1) {
     eye = center+Vec3f::makeVec(0.5f*maxDist, 0.75f*maxDist, 1.5f*maxDist);
+    degrees = atan(eye[2]/eye[0])*180/PI;
   } else if (waypoint == 2) {
+    degrees = 90.0;
     eye = center+Vec3f::makeVec(0, 0.1f*maxDist, 1.5f*maxDist);
   } else if (waypoint == 3) {
     eye = center+Vec3f::makeVec(1.5f*maxDist, 0.1f*maxDist, 0);
+    degrees = 0.0;
   }
   axisLen = maxDist*0.05f;
 }
@@ -114,7 +118,6 @@ void SetCamera() {
   gluLookAt(eye[0], eye[1], eye[2],
             center[0], center[1], center[2],
             up[0], up[1], up[2]);
-  // degrees = atan(eye[2]/eye[0])*180/PI;
 }
 
 void SetProjection() {
@@ -278,30 +281,24 @@ void Keyboard(unsigned char key, int x, int y) {
       ComputeLookAt();
       break;
     case 'z':
-      // TODO
       eye /= zoom;
       cout << "Zoom in" << endl;
-      // ComputeLookAt();
       SetCamera();
       break;
     case 'Z':
-      // TODO
       eye *= zoom;
       cout << "Zoom out" << endl;
-      // ComputeLookAt();
       SetCamera();
       break;
     case 'j':
-      // TODO
       RotateCamera('l');
       cout << "Orbit left" << endl;
-      // ComputeLookAt();
       SetCamera();
       break;
     case 'k':
-      // TODO
+      RotateCamera('r');
       cout << "Orbit right" << endl;
-      ComputeLookAt();
+      SetCamera();
       break;
     case ' ':
       // TODO
