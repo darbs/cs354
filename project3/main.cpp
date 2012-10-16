@@ -14,6 +14,7 @@
 #include <sstream>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #include "./common.h"
 
@@ -22,10 +23,13 @@
 #include "./joint.h"
 #include "./loader.h"
 #include "./geom.h"
+#include "./limbs.h"
 #include "./node.h"
 
 using namespace std;
 
+extern vector<Limb> limbStack;
+extern Node rootNode;
 // window parameters
 int window_width = 800, window_height = 600;
 float window_aspect = window_width/static_cast<float>(window_height);
@@ -38,7 +42,6 @@ void Keyboard(unsigned char key, int x, int y);
 void Idle();
 
 SceneGraph sg;
-Node figure;
 
 #define PI 3.14159265f
 
@@ -70,6 +73,42 @@ void RotateCamera(char dir) {
   double radius = sqrt(eye[0]*eye[0] + eye[2]*eye[2]);
   eye[0] = radius*cos(degrees*PI/180);
   eye[2] = radius*sin(degrees*PI/180);
+}
+
+Limb getLimb(int32_t id) {
+  return limbStack[static_cast<int>(id)];
+}
+
+// with respect to parent duhhh
+void makeVertex(Node root) {
+  if (root.children.size() == 0) {
+    Limb end = getLimb(root.id);
+    cout << end.id << " " << end.offSet[0] << " " <<
+            end.offSet[1] << " " <<
+            end.offSet[2] <<endl;
+    glVertex3f(end.offSet[0], end.offSet[1], end.offSet[2]);
+    return;
+  } else {
+    Limb part = getLimb(root.id);
+    glVertex3f(part.offSet[0], part.offSet[1], part.offSet[2]);
+    cout << part.id << " " << part.offSet[0] << " " <<
+            part.offSet[1] << " " <<
+            part.offSet[2] <<endl;
+    for (int i = 0; i < root.children.size(); i ++) {
+      Limb joint = getLimb(root.children[i].id);
+      glVertex3f(part.offSet[0] + joint.offSet[0]
+              , part.offSet[1] + joint.offSet[1]
+              , part.offSet[2] + joint.offSet[2]);
+      makeVertex(root.children[i]);
+    }
+  }
+}
+
+void drawFigure() {
+  glColor3f(0, 0, 0);
+  glBegin(GL_LINES);
+  makeVertex(rootNode);
+  glEnd();
 }
 
 void SetLighting();
@@ -232,6 +271,7 @@ void Display() {
   DrawFloor(800, 800, 80, 80);
 
   // TODO: draw scene graph and animate
+  drawFigure();
 
   if (showAxis) DrawAxis();
   if (showBounds) DrawBounds();
