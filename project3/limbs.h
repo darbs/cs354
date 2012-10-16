@@ -19,13 +19,17 @@ class Limb {
     const char * name;
     uint32_t id;
     uint32_t channelFlags;
-    float offSet[3];
+    Vec3f offSet;
     int channels;
     int order[6];
     float frame[6];
+    int index;
     bool end;
-    Limb() {}
-    void connectLimb(Limb i);
+    Limb() {
+        offSet = Vec3f::makeVec(0, 0, 0);
+        end = false;
+        channels = 0;
+    }
     void setOff(float * offset);
     void setOrder(int * order);
 };

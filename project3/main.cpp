@@ -28,8 +28,8 @@
 
 using namespace std;
 
-extern vector<Limb> limbStack;
 extern Node rootNode;
+extern vector< vector<float> > allFrames;
 // window parameters
 int window_width = 800, window_height = 600;
 float window_aspect = window_width/static_cast<float>(window_height);
@@ -75,40 +75,45 @@ void RotateCamera(char dir) {
   eye[2] = radius*sin(degrees*PI/180);
 }
 
-Limb getLimb(int32_t id) {
-  return limbStack[static_cast<int>(id)];
-}
-
 // with respect to parent duhhh
-void makeVertex(Node root) {
-  if (root.children.size() == 0) {
-    Limb end = getLimb(root.id);
-    cout << end.id << " " << end.offSet[0] << " " <<
-            end.offSet[1] << " " <<
-            end.offSet[2] <<endl;
-    glVertex3f(end.offSet[0], end.offSet[1], end.offSet[2]);
-    return;
-  } else {
-    Limb part = getLimb(root.id);
-    glVertex3f(part.offSet[0], part.offSet[1], part.offSet[2]);
-    cout << part.id << " " << part.offSet[0] << " " <<
-            part.offSet[1] << " " <<
-            part.offSet[2] <<endl;
-    for (int i = 0; i < root.children.size(); i ++) {
-      Limb joint = getLimb(root.children[i].id);
-      glVertex3f(part.offSet[0] + joint.offSet[0]
-              , part.offSet[1] + joint.offSet[1]
-              , part.offSet[2] + joint.offSet[2]);
-      makeVertex(root.children[i]);
+void makeModel(Node * root) {
+    if (root->limb.end) {
+        // glVertex3f(point[0], point[1], point[2]);
+    } else {
+        for (int i = 0; i < root->children.size(); i++) {
+            glPushMatrix();
+            glBegin(GL_LINE_STRIP);
+            glVertex3f(0, 0, 0);
+            glVertex3f(root->children[i].limb.offSet[0],
+                    root->children[i].limb.offSet[1],
+                    root->children[i].limb.offSet[2]);
+            glEnd();
+            glTranslatef(root->children[i].limb.offSet[0],
+                    root->children[i].limb.offSet[1],
+                    root->children[i].limb.offSet[2]);
+            makeModel(&root->children[i]);
+            glPopMatrix();
+        }
     }
-  }
 }
 
-void drawFigure() {
-  glColor3f(0, 0, 0);
-  glBegin(GL_LINES);
-  makeVertex(rootNode);
-  glEnd();
+void translateOffsets(Node * node, vector<float> frame) {
+    for (int i = 0; i < node->limb.channels; i++) {
+        node->limb.offSet[i] = frame[node->limb.index+i];
+    }
+}
+
+void modelTranslate(Node * root, int allFrameIndex) {
+    // translateOffsets(root, allFrames[allframeIndex]);
+    // cout << root->id << " " << root->limb.offSet << endl;
+    if (root->limb.end) {
+    } else {
+        translateOffsets(root, allFrames[allFrameIndex]);
+        cout << root->id << " " << root->limb.offSet << endl;
+        for (int i = 0; i < root->children.size(); i++) {
+            translateOffsets(&(root->children[i]), allFrames[allFrameIndex]);
+        }
+    }
 }
 
 void SetLighting();
@@ -271,13 +276,20 @@ void Display() {
   DrawFloor(800, 800, 80, 80);
 
   // TODO: draw scene graph and animate
-  drawFigure();
+  glPushMatrix();
+  glTranslatef(rootNode.limb.offSet[0],
+                    rootNode.limb.offSet[1],
+                    rootNode.limb.offSet[2]);
+  glColor3f(0, 0, 0);
+  modelTranslate(&rootNode, 0);
+  makeModel(&rootNode);
+  glPopMatrix();
 
   if (showAxis) DrawAxis();
   if (showBounds) DrawBounds();
-
   glFlush();          // finish the drawing commands
   glutSwapBuffers();  // and update the screen
+  // glutPostRedisplay();
 }
 
 // This reshape function is called whenever the user

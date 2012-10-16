@@ -4,9 +4,6 @@
 
 using namespace std;
 
-void Limb::connectLimb(Limb limb){
-}
-
 void Limb::setOff(float* offset){
   this->offSet[0] = offset[0];
   this->offSet[1] = offset[1];
