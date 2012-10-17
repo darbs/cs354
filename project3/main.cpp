@@ -30,6 +30,11 @@ using namespace std;
 
 extern Node rootNode;
 extern vector< vector<float> > allFrames;
+extern uint32_t numOfFrames;
+extern uint32_t frameSize;
+extern float frameTime;
+int frame = 0;
+bool animate = false;
 // window parameters
 int window_width = 800, window_height = 600;
 float window_aspect = window_width/static_cast<float>(window_height);
@@ -98,21 +103,56 @@ void makeModel(Node * root) {
 }
 
 void translateOffsets(Node * node, vector<float> frame) {
+    cout << node-> limb.id << " " <<node->limb.channels;
     for (int i = 0; i < node->limb.channels; i++) {
         node->limb.offSet[i] = frame[node->limb.index+i];
+        cout << " " << node->limb.offSet[i] << " ";
+    }
+    cout << endl;
+    // cout <<" " << node->limb.offSet << " " << endl;
+}
+
+// can possible combine the two to one function
+// translates first 6 offsets of frame n into root node
+void modelTranslateRoot(Node * root, int allFrameIndex) {
+    cout << root->id << " ";
+    for (int i = 0; i < root->limb.channels; i++) {
+        root->limb.offSet[i] = allFrames[allFrameIndex][i];
+        cout << root->limb.offSet[i] << " ";
+    }
+    cout << endl;
+}
+
+void modelTranslateBody(Node * root, int allFrameIndex) {
+    cout << root->id << " ";
+    if (root->limb.end) {
+        for (int i = 0; i < root->limb.channels; i++) {
+            root->limb.offSet[i] = allFrames[allFrameIndex][i+root->limb.index];
+            cout << root->limb.offSet[i] << " ";
+        }
+    } else {
+        for (int j = 0; j < root->limb.channels; j++) {
+            root->limb.offSet[j] = allFrames[allFrameIndex][j+root->limb.index];
+            cout << root->limb.offSet[j] << " ";
+        }
+        for (int k = 0; k < root->children.size(); k++) {
+            cout << endl;
+            modelTranslateBody(&root->children[k], allFrameIndex);
+        }
     }
 }
 
-void modelTranslate(Node * root, int allFrameIndex) {
-    // translateOffsets(root, allFrames[allframeIndex]);
-    // cout << root->id << " " << root->limb.offSet << endl;
-    if (root->limb.end) {
-    } else {
-        translateOffsets(root, allFrames[allFrameIndex]);
-        cout << root->id << " " << root->limb.offSet << endl;
-        for (int i = 0; i < root->children.size(); i++) {
-            translateOffsets(&(root->children[i]), allFrames[allFrameIndex]);
-        }
+void idle() {
+    float startTime = glutGet(GLUT_ELAPSED_TIME);
+    float delta = 0.0;
+    while (delta < frameTime) {
+        delta = glutGet(GLUT_ELAPSED_TIME);
+        delta = delta - startTime;
+        delta /= 1000;  // fix line for real time
+    }
+    frame++;
+    if (frame >= numOfFrames) {
+        frame = 0;
     }
 }
 
@@ -274,22 +314,28 @@ void Display() {
   SetCamera();
   SetDrawMode();
   DrawFloor(800, 800, 80, 80);
+  glColor3f(0, 0, 0);
 
   // TODO: draw scene graph and animate
   glPushMatrix();
+  // start position
   glTranslatef(rootNode.limb.offSet[0],
                     rootNode.limb.offSet[1],
                     rootNode.limb.offSet[2]);
-  glColor3f(0, 0, 0);
-  modelTranslate(&rootNode, 0);
+  modelTranslateRoot(&rootNode, frame);
   makeModel(&rootNode);
+  if (animate) {
+    // modelTranslateBody(&rootNode, frame);
+    idle();
+  }
   glPopMatrix();
+
 
   if (showAxis) DrawAxis();
   if (showBounds) DrawBounds();
   glFlush();          // finish the drawing commands
   glutSwapBuffers();  // and update the screen
-  // glutPostRedisplay();
+  glutPostRedisplay();
 }
 
 // This reshape function is called whenever the user
@@ -356,7 +402,7 @@ void Keyboard(unsigned char key, int x, int y) {
       SetCamera();
       break;
     case ' ':
-      // TODO
+      animate = !animate;
       cout << "Start/stop animation" << endl;
       break;
     case 'a':

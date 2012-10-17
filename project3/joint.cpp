@@ -21,6 +21,10 @@ vector< vector<float> > allFrames;
 void SceneGraph::CreateRoot(const char * name, uint32_t id) {
   root.name = name;
   root.id = id;
+  root.channels = 6;
+  root.offSet.assign(6, 0.0);
+  root.index = 0;
+  // cout << root.channels << endl;
   rootNode.id = id;
   rootNode.limb = root;
   limbStack.push_back(root);
