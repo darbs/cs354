@@ -17,19 +17,19 @@ using namespace std;
 
 class Limb {
  public:
-    const char * name;
-    uint32_t id;
-    uint32_t channelFlags;
-    vector<float> offSet;
-    int channels;
-    int order[6];
-    float frame[6];
-    int index;
-    bool end;
+    const char * name_;
+    uint32_t id_;
+    uint32_t channel_flags_;
+    vector<float> offSet_;
+    int channels_;
+    int order_[6];
+    float frame_[6];
+    int index_;
+    bool end_;
     Limb() {
-        offSet.assign(3, 0.0);
-        end = false;
-        channels = 0;
+        offSet_.assign(3, 0.0);
+        end_ = false;
+        channels_ = 0;
     }
     void setOff(float * offset);
     void setOrder(int * order);

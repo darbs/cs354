@@ -18,38 +18,38 @@ uint32_t frameNum;
 vector<float> frames;
 vector< vector<float> > allFrames;
 
+// create limb and push to stack for use of adding to node later
 void SceneGraph::CreateRoot(const char * name, uint32_t id) {
-  root.name = name;
-  root.id = id;
-  root.channels = 6;
-  root.offSet.assign(6, 0.0);
-  root.index = 0;
-  // cout << root.channels << endl;
-  rootNode.id = id;
-  rootNode.limb = root;
+  root.name_ = name;
+  root.id_ = id;
+  root.channels_ = 6;
+  root.offSet_.assign(6, 0.0);
+  root.index_ = 0;
+  rootNode.id_ = id;
+  rootNode.limb_ = root;
   limbStack.push_back(root);
 }
 
 void SceneGraph::CreateJoint(const char * name, uint32_t id) {
   Limb joint;
-  joint.name = name;
-  joint.id = id;
+  joint.name_ = name;
+  joint.id_ = id;
   limbStack.push_back(joint);
 }
 
 void SceneGraph::CreateEndSite(const char * name, uint32_t id) {
   Limb end;
-  end.end = true;
-  end.name = name;
-  end.id = id;
+  end.end_ = true;
+  end.name_ = name;
+  end.id_ = id;
   limbStack.push_back(end);
 }
 
-// called before class vals are init
+// called before class limb vals are init
 void SceneGraph::SetChild(uint32_t parent, uint32_t child) {
   Node c;
-  c.id = child;
-  c.limb = limbStack[child];
+  c.id_ = child;
+  c.limb_ = limbStack[child];
   rootNode.fas(parent, c);
 }
 
@@ -75,17 +75,14 @@ void SceneGraph::SetFrameIndex(uint32_t id, uint32_t index) {
 
 void SceneGraph::SetFrameTime(float delta) {
   frameTime = delta;
-  // cout << " setFrameTime:delta=" << frameTime << endl;
 }
 
 void SceneGraph::SetNumFrames(uint32_t num) {
   numOfFrames = num;
-  cout << " setNumFrames:num=" << numOfFrames << endl;
 }
 
 void SceneGraph::SetFrameSize(uint32_t size) {
   frameSize = size;
-  cout << " setFrameSize:size=" << frameSize << endl;
 }
 
 void SceneGraph::AddFrame(float * data) {
@@ -98,5 +95,4 @@ void SceneGraph::AddFrame(float * data) {
 
 void SceneGraph::SetCurrentFrame(uint32_t frameNumber) {
   frameNum = frameNumber;
-  cout << " setCurrentFrame:frameNumber=" << frameNum << endl;
 }

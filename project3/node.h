@@ -16,9 +16,9 @@ using namespace std;
 
 class Node {
  public:
-  uint32_t id;
-  vector<Node> children;
-  Limb limb;
+  uint32_t id_;
+  vector<Node> children_;
+  Limb limb_;
   Node(){
   }
   void setChild(Node leaf);
@@ -30,7 +30,6 @@ class Node {
   void fasFlags(uint32_t id, uint32_t flags);
   void fasOrder(uint32_t id, int * order);
   void fasIndex(uint32_t id, uint32_t index);
-  // Node * find(uint32_t id);
 };
 
 #endif	/* NODE_H */
