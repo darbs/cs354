@@ -14,6 +14,7 @@
 #include <sstream>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #include "./common.h"
 
@@ -22,9 +23,30 @@
 #include "./joint.h"
 #include "./loader.h"
 #include "./geom.h"
+#include "./limbs.h"
 #include "./node.h"
 
 using namespace std;
+
+#define PI 3.14159265f
+
+// my variables
+extern Node rootNode;
+extern vector< vector<float> > allFrames;
+extern uint32_t numOfFrames;
+extern uint32_t frameSize;
+extern float frameTime;
+int frame = 0;
+bool animate = false;
+// created for camera manipulation
+bool z = false;
+bool r = false;
+double zoom = 1.025f;
+double turn = 1.025f;
+double degrees = 0.0;
+double toRad = PI / 180;
+
+
 
 // window parameters
 int window_width = 800, window_height = 600;
@@ -38,9 +60,6 @@ void Keyboard(unsigned char key, int x, int y);
 void Idle();
 
 SceneGraph sg;
-Node figure;
-
-#define PI 3.14159265f
 
 Vec3f eye, center, up;
 int waypoint = 1;
@@ -54,12 +73,6 @@ float axisLen = 1.0f;
 
 bool showBounds = false;
 
-// created for camera manipulation
-double zoom = 1.025f;
-double turn = 1.025f;
-double degrees = 0.0;
-double toRad = PI / 180;
-
 void RotateCamera(char dir) {
   if (dir == 'l') {
     degrees += turn;
@@ -70,6 +83,101 @@ void RotateCamera(char dir) {
   double radius = sqrt(eye[0]*eye[0] + eye[2]*eye[2]);
   eye[0] = radius*cos(degrees*PI/180);
   eye[2] = radius*sin(degrees*PI/180);
+}
+
+void changeColor(uint32_t id) {
+    int color = id % 3;
+    if (color >= 3) {
+        color = 0;
+        glColor3f(0.0, 0.0, 0.0);
+    } else if (color == 2) {
+        glColor3f(1.0, 0.0, 0.0);
+    } else if (color == 1) {
+        glColor3f(0.0, 1.0, 0.0);
+    } else if (color == 0) {
+        glColor3f(0.0, 0.0, 1.0);
+    }
+}
+
+void rotateModel(Node * root, int allFrameIndex) {
+    for (int i = 0; i < root->limb_.channels_; i++) {
+        if (root->limb_.order_[i] == 5) {
+            glRotatef(allFrames[allFrameIndex][i+root->limb_.index_], 0, 0, 1);
+        } else if (root->limb_.order_[i] == 4) {
+            glRotatef(allFrames[allFrameIndex][i+root->limb_.index_], 0, 1, 0);
+        } else if (root->limb_.order_[i] == 3) {
+            glRotatef(allFrames[allFrameIndex][i+root->limb_.index_], 1, 0, 0);
+        }
+    }
+}
+
+void makeModel(Node * root) {
+    if (!root->limb_.end_) {
+        rotateModel(root, frame);
+        glPushMatrix();
+        glColor3f(0, 0, 0);
+        glutSolidCube(1);
+        glPopMatrix();
+        for (int i = 0; i < root->children_.size(); i++) {
+            glPushMatrix();
+            changeColor(root->id_);
+            glBegin(GL_LINE_STRIP);
+            glVertex3f(0, 0, 0);
+            glVertex3f(root->children_[i].limb_.offSet_[0],
+                    root->children_[i].limb_.offSet_[1],
+                    root->children_[i].limb_.offSet_[2]);
+            glEnd();
+            glTranslatef(root->children_[i].limb_.offSet_[0],
+                    root->children_[i].limb_.offSet_[1],
+                    root->children_[i].limb_.offSet_[2]);
+            makeModel(&root->children_[i]);
+            glPopMatrix();
+        }
+    } else {
+        if (root->id_ == 19) {
+          glutSolidSphere(1.75, 5, 5);
+        } else if (root->id_ == 26 || root->id_ == 35) {
+            glColor3f(1.0, 0.0, 0.0);
+            glutSolidCube(2.0);
+        } else if (root->id_ < 19) {
+            glColor3f(0, 0, 0);
+            glutSolidCone(1, 2, 5, 5);
+        }
+    }
+}
+
+void translateOffsets(Node * node, vector<float> frame) {
+    for (int i = 0; i < node->limb_.channels_; i++) {
+        node->limb_.offSet_[i] = frame[node->limb_.index_+i];
+    }
+}
+
+// can possible combine the two to one function
+// translates first 6 offsets of frame n into root node
+void modelTranslateRoot(Node * root, int allFrameIndex) {
+    translateOffsets(root, allFrames[allFrameIndex]);
+}
+
+void idle() {
+    float startTime = glutGet(GLUT_ELAPSED_TIME);
+    float delta = 0.0;
+    while (delta < frameTime) {
+        delta = glutGet(GLUT_ELAPSED_TIME);
+        delta = delta - startTime;
+        delta /= 1000;  // fix line for real time
+    }
+    frame++;
+    if (frame >= numOfFrames) {
+        frame = 0;
+    }
+}
+
+void Mouse(int button, int state, int x, int y) {
+  if (button == 3) {
+      eye /= zoom;
+  } else if (button == 4) {
+      eye *= zoom;
+  }
 }
 
 void SetLighting();
@@ -112,9 +220,9 @@ void ComputeLookAt() {
 
 void SetLighting() {
   glShadeModel(GL_FLAT);
-  glDisable(GL_LIGHTING);
-  glDisable(GL_LIGHT0);
-  glDisable(GL_COLOR_MATERIAL);
+  glEnable(GL_LIGHTING);
+  glEnable(GL_LIGHT0);
+  glEnable(GL_COLOR_MATERIAL);
 }
 
 void SetCamera() {
@@ -231,13 +339,26 @@ void Display() {
   SetDrawMode();
   DrawFloor(800, 800, 80, 80);
 
-  // TODO: draw scene graph and animate
+  glPushMatrix();
+  // start position
+  glTranslatef(rootNode.limb_.offSet_[0],
+                    rootNode.limb_.offSet_[1],
+                    rootNode.limb_.offSet_[2]);
+  // translate root and draw model
+  modelTranslateRoot(&rootNode, frame);
+
+  makeModel(&rootNode);
+  // animate if space is hit
+  if (animate) {
+    idle();
+  }
+  glPopMatrix();
 
   if (showAxis) DrawAxis();
   if (showBounds) DrawBounds();
-
   glFlush();          // finish the drawing commands
   glutSwapBuffers();  // and update the screen
+  glutPostRedisplay();
 }
 
 // This reshape function is called whenever the user
@@ -266,7 +387,6 @@ void Resize(int width, int height) {
 // and x and y tell where the mouse was when it was hit.
 void Keyboard(unsigned char key, int x, int y) {
   y = window_height - y;
-
   float sgn = 1.0f;
   Vec3f v;
 
@@ -304,7 +424,7 @@ void Keyboard(unsigned char key, int x, int y) {
       SetCamera();
       break;
     case ' ':
-      // TODO
+      animate = !animate;
       cout << "Start/stop animation" << endl;
       break;
     case 'a':
@@ -323,8 +443,7 @@ void Keyboard(unsigned char key, int x, int y) {
   glutPostRedisplay();
 }
 
-void Idle() {
-}
+void Idle() {}
 
 void processCommandLine(int argc, char *argv[]) {
   if (argc>1) {
@@ -343,8 +462,8 @@ void showMenu() {
   cout << "a - show/hide axis" << endl;
   cout << "b - show/hide bounds" << endl;
   cout << "[1-3] - move to waypoint" << endl;
-  cout << "z - zoom in" << endl;
-  cout << "Z - zoom out" << endl;
+  cout << "z - zoom in or scroll the mouse wheel forward" << endl;
+  cout << "Z - zoom out or scroll the mouse wheel backward" << endl;
   cout << "j - rotate left" << endl;
   cout << "k - rotate right" << endl;
   cout << "[SPACE] - start/stop" << endl;
@@ -361,6 +480,7 @@ int main(int argc, char *argv[]) {
   glutDisplayFunc(Display);
   glutReshapeFunc(Resize);
   glutKeyboardFunc(Keyboard);
+  glutMouseFunc(Mouse);
   glutIdleFunc(Idle);
 
   processCommandLine(argc, argv);
@@ -368,7 +488,7 @@ int main(int argc, char *argv[]) {
   showMenu();
 
   InitGL();
-
+  // glColor3f(0, 0, 0);
   glutMainLoop();
 
   return 0;

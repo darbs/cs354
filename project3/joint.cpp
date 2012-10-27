@@ -1,111 +1,98 @@
 #include <stdint.h>
 #include <iostream>
 #include <vector>
-#include "./node.h"
-#include "./bodyParts.h"
+#include <list>
 #include "./joint.h"
+#include "./limbs.h"
+#include "./node.h"
 
 using namespace std;
-Node root;
-Node * ptr;
-vector<BodyPart> limbs;
-vector<Node>::iterator it;
+Limb root;
+Node rootNode;
+vector<Limb> limbStack;
+vector<float> frameStack;
+float frameTime;
+uint32_t numOfFrames;
+uint32_t frameSize;
+uint32_t frameNum;
+vector<float> frames;
+vector< vector<float> > allFrames;
 
+// create limb and push to stack for use of adding to node later
 void SceneGraph::CreateRoot(const char * name, uint32_t id) {
-  // create start point for tree
-  root = Node();
-  root.id = id;
-  ptr = &root;
-  // create the root limb
-  BodyPart limb;
-  limb.name = name;
-  limb.id = id;
-  limbs.push_back(limb);
-  cout << "-----createRoot BITCH:name=" << name << " id=" << root.id << endl;
-  // cout << limbs[0].name << " " << limbs[0].id << endl;
+  root.name_ = name;
+  root.id_ = id;
+  root.channels_ = 6;
+  root.offSet_.assign(6, 0.0);
+  root.index_ = 0;
+  rootNode.id_ = id;
+  rootNode.limb_ = root;
+  limbStack.push_back(root);
 }
 
 void SceneGraph::CreateJoint(const char * name, uint32_t id) {
-    BodyPart limb;
-    limb.name = name;
-    limb.id = id;
-    limbs.push_back(limb);
+  Limb joint;
+  joint.name_ = name;
+  joint.id_ = id;
+  limbStack.push_back(joint);
 }
 
 void SceneGraph::CreateEndSite(const char * name, uint32_t id) {
-  cout << "---createEndSite:name=" << name << " id=" << id << endl;
-  // TODO
-  BodyPart limb;
-  limb.name = name;
-  limb.id = id;
-  limbs.push_back(limb);
+  Limb end;
+  end.end_ = true;
+  end.name_ = name;
+  end.id_ = id;
+  limbStack.push_back(end);
 }
 
+// called before class limb vals are init
 void SceneGraph::SetChild(uint32_t parent, uint32_t child) {
-  cout << "---setChild:parent=" << parent << " child=" << child << endl;
-  root.setNode(parent, child);
-  // cout << "retrieved node: " << *p->id << endl;
-  // root.print();
+  Node c;
+  c.id_ = child;
+  c.limb_ = limbStack[child];
+  rootNode.fas(parent, c);
 }
 
 void SceneGraph::SetOffset(uint32_t id, float * offset) {
-  limbs[id].offSet = Vec3f::makeVec(offset[0], offset[1], offset[2]);
-  cout << "---setOffset:id=" << id
-          << " offset= " << limbs[id].offSet[0]
-          << "," << limbs[id].offSet[1]
-       << "," << limbs[id].offSet[2] << endl;
+  rootNode.fasOff(id, offset);
 }
 
 void SceneGraph::SetNumChannels(uint32_t id, uint16_t num) {
-  limbs[id].channels = num;
-    cout << "---Channels:id=" << id << " num="
-            << limbs[id].channels << endl;
+  rootNode.fasChannels(id, num);
 }
 
 void SceneGraph::SetChannelFlags(uint32_t id, uint16_t flags) {
-  cout << "setChannelFlags:id=" << id << " flags=" << flags << endl;
-  // TODO
+  rootNode.fasFlags(id, flags);
 }
 
 void SceneGraph::SetChannelOrder(uint32_t id, int * order) {
-  cout  << "setChannelOrder:id=" << id << endl;
-  // TODO
+  rootNode.fasOrder(id, order);
 }
 
 void SceneGraph::SetFrameIndex(uint32_t id, uint32_t index) {
-  cout << "setFrameIndex:id=" << id << " index=" << index << endl;
-  // TODO
+  rootNode.fasIndex(id, index);
 }
 
 void SceneGraph::SetFrameTime(float delta) {
-  cout << "setFrameTime:delta=" << delta << endl;
-  // TODO
+  frameTime = delta;
 }
 
 void SceneGraph::SetNumFrames(uint32_t num) {
-  cout << "setNumFrames:num=" << num << endl;
-  // TODO
+  numOfFrames = num;
 }
 
 void SceneGraph::SetFrameSize(uint32_t size) {
-  cout << "setFrameSize:size=" << size << endl;
-  // TODO
+  frameSize = size;
 }
 
 void SceneGraph::AddFrame(float * data) {
-    for (int i = 0; i < 6; i++) {
-        limbs[i].degreesOfFreedom.push_back(data[i]);
+    vector<float> frame;
+    for (int i = 0; i < numOfFrames; i++) {
+        frame.push_back(data[i]);
     }
-    for (int j = 1; j < limbs.size(); j++){
-        for(k = 0; k < limbs[j].channels; k++){
-            limbs[j].degreesOfFreedom.pushback(data[i]);
-        }
-    }
-  // TODO adds freedom corresponding to its number of def
-  // might cause problem if not added in order
-  // root.degreesOfFreedom.push_back(data);
+    allFrames.push_back(frame);
 }
 
 void SceneGraph::SetCurrentFrame(uint32_t frameNumber) {
-  cout << "setCurrentFrame:frameNumber=" << frameNumber << endl;
+  frameNum = frameNumber;
 }

@@ -20,7 +20,7 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 CC = g++
 CFLAGS = -Wall -g -D__MAC__
-INCLUDE = 
+INCLUDE =
 LIBDIR = -L/lusr/X11/lib
 LIBS = -framework OpenGL -framework GLUT
 endif
@@ -38,10 +38,10 @@ else
 	SRCS= $(shell ls *.cpp)
 endif
 
-OBJS= $(patsubst %.cpp, %.o, $(SRCS)) 
+OBJS= $(patsubst %.cpp, %.o, $(SRCS))
 
-LEX= lex 
-YACC= yacc 
+LEX= lex
+YACC= yacc
 YFLAGS= -d
 
 all: $(PROD)
@@ -50,15 +50,15 @@ y.tab.cpp: bvh.y
 	$(YACC) $(YFLAGS) $<
 	mv y.tab.c y.tab.cpp
 
-lex.yy.cpp: bvh.l 
-	$(LEX) $< 
+lex.yy.cpp: bvh.l
+	$(LEX) $<
 	mv lex.yy.c lex.yy.cpp
 
 $(OBJS): %.o: %.cpp
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $< -o $@
 
 $(PROD):  $(OBJS)
-	./check-code main.cpp joint.h joint.cpp node.h node.cpp
+	./check-code main.cpp joint.h joint.cpp limbs.h
 	$(CC) -o $(PROD) $^ $(LIBS)
 
 clean:
@@ -68,3 +68,23 @@ clean:
 	rm lex.yy.cpp
 	rm y.tab.h
 
+
+
+# build tests
+build-tests: .build-tests-post
+
+.build-tests-pre:
+# Add your pre 'build-tests' code here...
+
+.build-tests-post: .build-tests-impl
+# Add your post 'build-tests' code here...
+
+
+# run tests
+test: .test-post
+
+.test-pre:
+# Add your pre 'test' code here...
+
+.test-post: .test-impl
+# Add your post 'test' code here...
