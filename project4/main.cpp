@@ -16,6 +16,12 @@ Mesh mesh;
 
 GLuint* texture_ids;
 
+bool click;
+float zoom = 1.01;
+int eyeY;
+int eyeX;
+Vec3f eye = Vec3f::makeVec(2.0, 2.0, 5.0);
+
 // window parameters
 int window_width = 800, window_height = 600;
 float window_aspect = window_width / static_cast<float>(window_height);
@@ -33,7 +39,7 @@ void Display() {
   // mesh.bb() may be useful.
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-  gluLookAt(2, 2, 5,
+  gluLookAt(eye[0], eye[1], eye[2],
             0, 0, 0,
             0, 1, 0);
 
@@ -132,11 +138,25 @@ void DrawAxis() {
 
 void MouseButton(int button, int state, int x, int y) {
   // TODO implement arc ball and zoom
+  cout << button << endl;
+  if (button == 0) {
+    click = true;
+    eyeY = y;
+    eyeX = x;
+  }
   glutPostRedisplay();
 }
 
 void MouseMotion(int x, int y) {
   // TODO implement arc ball and zoom
+  if (click and eyeX == x) {
+    if (y > eyeY) {
+      eye /= zoom;
+    } else {
+      eye *= zoom;
+    }
+    eyeY = y;
+  }
   glutPostRedisplay();
 }
 
