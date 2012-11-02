@@ -10,23 +10,59 @@
 #include "./io.h"
 #include "./texture.h"
 
+#define PI 3.14159265
+
 using namespace std;
 
 Mesh mesh;
 
 GLuint* texture_ids;
 
+// camera controls
 bool click;
+bool rclick;
 float zoom = 1.01;
 int eyeY;
 int eyeX;
+float oldx = 0.0;
+float oldy = 0.0;
+float newx = 0.0;
+float newy = 0.0;
 Vec3f eye = Vec3f::makeVec(2.0, 2.0, 5.0);
+Vec3f oldEye;
+Vec3f newEye;
 
 // window parameters
 int window_width = 800, window_height = 600;
 float window_aspect = window_width / static_cast<float>(window_height);
 
 bool scene_lighting;
+
+// -----added code
+Vec3f eyeVector(int x, int y) {
+  Vec3f mouse = Vec3f::makeVec(2.0*x/window_width - 1.0,
+                          2.0*y/window_height - 1.0,
+                          0.0);
+  mouse[1] = -mouse[1];
+  float mousep = mouse.norm2();
+  if (mousep <= 1) {
+      mouse[2] = sqrt(1-mouse[0]*mouse[0]-mouse[1]*mouse[1]);
+  } else {
+      mouse = mouse.unit();
+  }
+  return mouse;
+}
+
+void computeEye() {
+  // Vec3f oldEye = Vec3f::makeVec(oldx, oldy, 0.0);
+  // Vec3f newEye = Vec3f::makeVec(newx, newy, 0.0);
+  float theta = acos(min(1.0f, oldEye*newEye));
+  theta = theta*180/PI;
+  Vec3f cross = oldEye^newEye;
+  glRotatef(theta, cross[0], cross[1], cross[2]);
+  cout << oldEye << newEye << " " << theta << " " << cross << endl;
+}
+// -----end of added code
 
 void Display() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -43,6 +79,10 @@ void Display() {
             0, 0, 0,
             0, 1, 0);
 
+  if (!(oldEye == newEye)) {
+    computeEye();
+  }
+  glutWireCube(0.5);
   // TODO set up lighting, material properties and render mesh.
   // Be sure to call glEnable(GL_RESCALE_NORMAL) so your normals
   // remain normalized throughout transformations.
@@ -138,24 +178,32 @@ void DrawAxis() {
 
 void MouseButton(int button, int state, int x, int y) {
   // TODO implement arc ball and zoom
-  cout << button << endl;
-  if (button == 0) {
+  if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
     click = true;
-    eyeY = y;
-    eyeX = x;
+    // oldx = x;
+    // oldy = y;
+    oldEye = eyeVector(x, y);
+    // cout << oldx << " " << oldy << endl;
+  } else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
+    rclick = true;
+  } else {
+    click = false;
   }
   glutPostRedisplay();
 }
 
 void MouseMotion(int x, int y) {
   // TODO implement arc ball and zoom
-  if (click and eyeX == x) {
-    if (y > eyeY) {
-      eye /= zoom;
-    } else {
-      eye *= zoom;
-    }
+  if (click) {
+    // newx= x;
+    // newy = y;
+    newEye = eyeVector(x, y);
+    computeEye();
+    // cout << "    " << newx << " " << newy << endl;
+  }
+  if (rclick) {
     eyeY = y;
+    eyeX = x;
   }
   glutPostRedisplay();
 }
