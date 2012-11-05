@@ -21,16 +21,13 @@ GLuint* texture_ids;
 // camera controls
 bool click;
 bool rclick;
-float zoom = 1.01;
-int eyeY;
-int eyeX;
-float oldx = 0.0;
-float oldy = 0.0;
-float newx = 0.0;
-float newy = 0.0;
+float zoom = 1.1;
+int zoomY;
+float otheta = 0.0;
 Vec3f eye = Vec3f::makeVec(2.0, 2.0, 5.0);
 Vec3f oldEye;
 Vec3f newEye;
+GLfloat currentRotationMatrix[16];
 
 // window parameters
 int window_width = 800, window_height = 600;
@@ -54,13 +51,21 @@ Vec3f eyeVector(int x, int y) {
 }
 
 void computeEye() {
-  // Vec3f oldEye = Vec3f::makeVec(oldx, oldy, 0.0);
-  // Vec3f newEye = Vec3f::makeVec(newx, newy, 0.0);
   float theta = acos(min(1.0f, oldEye*newEye));
   theta = theta*180/PI;
   Vec3f cross = oldEye^newEye;
+  // glLoadMatrixf(currentRotationMatrix);
   glRotatef(theta, cross[0], cross[1], cross[2]);
-  cout << oldEye << newEye << " " << theta << " " << cross << endl;
+  // glGetFloatv(GL_MODELVIEW_MATRIX, currentRotationMatrix);
+  // PrintMatrix(*currentRotationMatrix);
+}
+
+void SetCamera() {
+  Vec3f center = mesh.bb().center();
+  gluLookAt(eye[0], eye[1], eye[2],
+            center[0], center[1], center[2],
+          0, 1, 0);
+  glutPostRedisplay();
 }
 // -----end of added code
 
@@ -75,18 +80,21 @@ void Display() {
   // mesh.bb() may be useful.
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-  gluLookAt(eye[0], eye[1], eye[2],
-            0, 0, 0,
-            0, 1, 0);
+  SetCamera();
 
   if (!(oldEye == newEye)) {
     computeEye();
   }
-  glutWireCube(0.5);
+
+  // glutWireCube(0.5);
+  mesh.render(texture_ids);
+  // mesh.render_normals();
+  // mesh.render_texture();
+
   // TODO set up lighting, material properties and render mesh.
   // Be sure to call glEnable(GL_RESCALE_NORMAL) so your normals
   // remain normalized throughout transformations.
-
+  glEnable(GL_RESCALE_NORMAL);
   // You can leave the axis in if you like.
   glDisable(GL_LIGHTING);
   glLineWidth(4);
@@ -177,39 +185,41 @@ void DrawAxis() {
 }
 
 void MouseButton(int button, int state, int x, int y) {
-  // TODO implement arc ball and zoom
+  cout << button << " " << state << endl;
   if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
     click = true;
-    // oldx = x;
-    // oldy = y;
     oldEye = eyeVector(x, y);
-    // cout << oldx << " " << oldy << endl;
   } else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
     rclick = true;
+    zoomY = y;
   } else {
     click = false;
+    rclick = false;
   }
   glutPostRedisplay();
 }
 
 void MouseMotion(int x, int y) {
-  // TODO implement arc ball and zoom
   if (click) {
-    // newx= x;
-    // newy = y;
     newEye = eyeVector(x, y);
-    computeEye();
-    // cout << "    " << newx << " " << newy << endl;
   }
   if (rclick) {
-    eyeY = y;
-    eyeX = x;
+    if (zoomY > y) {
+      eye /= zoom;
+    } else {
+      eye *= zoom;
+    }
+    zoomY = y;
   }
   glutPostRedisplay();
 }
 
 void Keyboard(unsigned char key, int x, int y) {
   switch (key) {
+    case '1':
+      eye = Vec3f::makeVec(2.0, 2.0, 5.0);
+      cout << eye << endl;
+      break;
     case 'q':
     case 27:  // esc
       exit(0);
@@ -257,6 +267,18 @@ int main(int argc, char *argv[]) {
 
     ParseObj(filename, mesh);
     mesh.compute_normals();
+    // currentRotationMatrix = float[16];
+    // test
+    /*
+    vector< vector<Vec3f> > vertexes = mesh.get_vertices();
+    for (int i = 0; i < vertexes.size(); i++) {
+      for (int j = 0;  j < vertexes[i].size(); j ++) {
+        cout << vertexes[i][j];
+      }
+      cout << endl;
+    }
+    cout << mesh.get_vertices().size() << endl;
+    /**/
 
     texture_ids = new GLuint[mesh.num_materials()];
     glGenTextures(mesh.num_materials(), texture_ids);
@@ -265,6 +287,8 @@ int main(int argc, char *argv[]) {
       Material& material = mesh.material(i);
       material.LoadTexture(texture_ids[i]);
     }
+
+    // do the texture rendering
   }
 
   glutMainLoop();

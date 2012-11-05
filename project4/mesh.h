@@ -7,6 +7,7 @@
 #include "./vec.h"
 #include "./bb.h"
 #include "./material.h"
+#include "./texture.h"
 
 // This class represents a mesh, which contains vertices, polygons,
 // and material properties for each polygon.
@@ -73,8 +74,27 @@ class Mesh {
 
   void compute_normals();
 
+  void render(GLuint* texture_ids);
+
+  void render_normals();
+
+  void render_texture();
+
+  // delete added for testing
+  vector< vector<Vec3f> > get_vertices();
+  vector<Vec3f> get_textures();
+  vector< vector<Vec3f> > get_polygons();
+  vector<Vec3f> get_normals();
+
  private:
   // TODO add necessary data structures here
+  std::vector< vector <Vec3f> > vertices;
+  std::vector<Vec3f> normals;
+  std::vector<Vec3f> textures;
+  std::vector< vector<Vec3f> > polygons;
+  std::vector< vector<Vec3f> > polygon_textures;
+  std::vector< vector<int> > mtl_indices;
+  // GLuint * texture_ids;
 
   std::vector<Material> _materials;
   std::vector<int> _polygon2material;
