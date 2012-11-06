@@ -72,6 +72,7 @@ class Mesh {
 
   int num_materials() const { return _materials.size(); }
 
+  // added methods
   void compute_normals();
 
   void render(GLuint* texture_ids);
@@ -79,6 +80,8 @@ class Mesh {
   void render_normals();
 
   void render_texture();
+
+  void lighting(int i);
 
   // delete added for testing
   vector< vector<Vec3f> > get_vertices();
@@ -94,6 +97,7 @@ class Mesh {
   std::vector< vector<Vec3f> > polygons;
   std::vector< vector<Vec3f> > polygon_textures;
   std::vector< vector<int> > mtl_indices;
+  bool has_texture;
   // GLuint * texture_ids;
 
   std::vector<Material> _materials;

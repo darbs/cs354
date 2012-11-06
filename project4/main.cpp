@@ -28,7 +28,6 @@ Vec3f eye = Vec3f::makeVec(2.0, 2.0, 5.0);
 Vec3f oldEye;
 Vec3f newEye;
 GLfloat currentRotationMatrix[16];
-
 // window parameters
 int window_width = 800, window_height = 600;
 float window_aspect = window_width / static_cast<float>(window_height);
@@ -56,14 +55,16 @@ void computeEye() {
   Vec3f cross = oldEye^newEye;
   // glLoadMatrixf(currentRotationMatrix);
   glRotatef(theta, cross[0], cross[1], cross[2]);
-  // glGetFloatv(GL_MODELVIEW_MATRIX, currentRotationMatrix);
+  // MultMatrix(currentRotationMatrix);
+  glGetFloatv(GL_MODELVIEW_MATRIX, currentRotationMatrix);
   // PrintMatrix(*currentRotationMatrix);
 }
 
 void SetCamera() {
-  Vec3f center = mesh.bb().center();
+  // glTranslatef(center[0], center[1], center[2]);
   gluLookAt(eye[0], eye[1], eye[2],
-            center[0], center[1], center[2],
+            // center[0], center[1], center[2],
+          0, 0, 0,
           0, 1, 0);
   glutPostRedisplay();
 }
@@ -88,6 +89,8 @@ void Display() {
 
   // glutWireCube(0.5);
   mesh.render(texture_ids);
+  // glTranslatef(center[0], center[1], center[2]);
+  // glTranslatef(center[0], center[1], center[2]);
   // mesh.render_normals();
   // mesh.render_texture();
 
@@ -98,7 +101,11 @@ void Display() {
   // You can leave the axis in if you like.
   glDisable(GL_LIGHTING);
   glLineWidth(4);
+  // translate camera and axis
+  Vec3f center = mesh.bb().center();
+  glTranslatef(center[0], center[1], center[2]);
   DrawAxis();
+  // glPopMatrix();
   glEnable(GL_LIGHTING);
 
   glFlush();
