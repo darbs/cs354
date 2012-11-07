@@ -21,13 +21,21 @@ GLuint* texture_ids;
 // camera controls
 bool click;
 bool rclick;
-float zoom = 1.1;
+float zoom = 1.01;
 int zoomY;
 float otheta = 0.0;
-Vec3f eye = Vec3f::makeVec(2.0, 2.0, 5.0);
+Vec3f eye;
 Vec3f oldEye;
 Vec3f newEye;
-GLfloat currentRotationMatrix[16];
+GLfloat currentRotationMatrix[] = {1.0, 0.0, 0.0, 0.0,
+                                    0.0, 1.0, 0.0, 0.0,
+                                    0.0, 0.0, 1.0, 0.0,
+                                    0.0, 0.0, 0.0, 1.0};
+// GLfloat * currentRotationMatrix;
+bool normals = false;
+bool texture = true;
+//------------------
+
 // window parameters
 int window_width = 800, window_height = 600;
 float window_aspect = window_width / static_cast<float>(window_height);
@@ -53,11 +61,16 @@ void computeEye() {
   float theta = acos(min(1.0f, oldEye*newEye));
   theta = theta*180/PI;
   Vec3f cross = oldEye^newEye;
-  // glLoadMatrixf(currentRotationMatrix);
+//  glMatrixMode(GL_MODELVIEW);
+//  glLoadIdentity();
+//  glLoadMatrixf(currentRotationMatrix);
+//  glMultMatrixf(currentRotationMatrix);
   glRotatef(theta, cross[0], cross[1], cross[2]);
   // MultMatrix(currentRotationMatrix);
-  glGetFloatv(GL_MODELVIEW_MATRIX, currentRotationMatrix);
-  // PrintMatrix(*currentRotationMatrix);
+  // PrintMatrix(*currentRot      float model_view[16];
+//  glGetFloatv(GL_MODELVIEW_MATRIX, currentRotationMatrix);
+//  PrintMatrix(*currentRotationMatrix);
+//  oldEye = newEye;
 }
 
 void SetCamera() {
@@ -82,27 +95,39 @@ void Display() {
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
   SetCamera();
+  glEnable(GL_RESCALE_NORMAL);
+  // default light from material.cpp
+
+  glShadeModel(GL_SMOOTH);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+  GLfloat spec[3] = {.1, .1, .1};
+  GLfloat amb[3] = {.1, .1, .1};
+  GLfloat diff[3] = {.3, .3, .3};
+  glEnable(GL_LIGHT0);
+  glLightfv(GL_LIGHT0, GL_SPECULAR, spec);
+  glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
+  glLightfv(GL_LIGHT0, GL_DIFFUSE, diff);
 
   if (!(oldEye == newEye)) {
-    computeEye();
+//    computeEye();
   }
 
-  // glutWireCube(0.5);
-  mesh.render(texture_ids);
-  // glTranslatef(center[0], center[1], center[2]);
-  // glTranslatef(center[0], center[1], center[2]);
-  // mesh.render_normals();
+  Vec3f center = mesh.bb().center();
+  glTranslatef(-center[0], -center[1], -center[2]);
+  mesh.render(texture, texture_ids);
+  if (normals) {
+    mesh.render_normals();
+  }
   // mesh.render_texture();
 
   // TODO set up lighting, material properties and render mesh.
   // Be sure to call glEnable(GL_RESCALE_NORMAL) so your normals
   // remain normalized throughout transformations.
-  glEnable(GL_RESCALE_NORMAL);
   // You can leave the axis in if you like.
   glDisable(GL_LIGHTING);
   glLineWidth(4);
   // translate camera and axis
-  Vec3f center = mesh.bb().center();
   glTranslatef(center[0], center[1], center[2]);
   DrawAxis();
   // glPopMatrix();
@@ -193,9 +218,15 @@ void DrawAxis() {
 
 void MouseButton(int button, int state, int x, int y) {
   cout << button << " " << state << endl;
-  if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+  if (button == GLUT_LEFT_BUTTON) {
+    if (state == GLUT_DOWN) {
     click = true;
     oldEye = eyeVector(x, y);
+    } else {
+      computeEye();
+      glGetFloatv(GL_MODELVIEW_MATRIX, currentRotationMatrix);
+      PrintMatrix(*currentRotationMatrix);
+    }
   } else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
     rclick = true;
     zoomY = y;
@@ -223,9 +254,17 @@ void MouseMotion(int x, int y) {
 
 void Keyboard(unsigned char key, int x, int y) {
   switch (key) {
-    case '1':
-      eye = Vec3f::makeVec(2.0, 2.0, 5.0);
+    case 'r':
+      eye = Vec3f::makeVec(mesh.bb().xdim(),
+              mesh.bb().ydim(),
+              mesh.bb().zdim());
       cout << eye << endl;
+      break;
+    case 'n':
+      normals = !normals;
+      break;
+    case 't':
+      texture = !texture;
       break;
     case 'q':
     case 27:  // esc
@@ -274,18 +313,9 @@ int main(int argc, char *argv[]) {
 
     ParseObj(filename, mesh);
     mesh.compute_normals();
-    // currentRotationMatrix = float[16];
-    // test
-    /*
-    vector< vector<Vec3f> > vertexes = mesh.get_vertices();
-    for (int i = 0; i < vertexes.size(); i++) {
-      for (int j = 0;  j < vertexes[i].size(); j ++) {
-        cout << vertexes[i][j];
-      }
-      cout << endl;
-    }
-    cout << mesh.get_vertices().size() << endl;
-    /**/
+    eye[0] = mesh.bb().xdim();
+    eye[1] = mesh.bb().ydim();
+    eye[2] = mesh.bb().zdim();
 
     texture_ids = new GLuint[mesh.num_materials()];
     glGenTextures(mesh.num_materials(), texture_ids);
