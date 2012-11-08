@@ -108,8 +108,8 @@ void Mesh::render_material(Material m, GLuint* texture_ids) {
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, &coeff);
-      glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, m.texture_id());
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, m.texture_id());
   } else {
     glDisable(GL_TEXTURE_2D);
   }

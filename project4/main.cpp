@@ -27,11 +27,10 @@ float otheta = 0.0;
 Vec3f eye;
 Vec3f oldEye;
 Vec3f newEye;
-GLfloat currentRotationMatrix[] = {1.0, 0.0, 0.0, 0.0,
-                                    0.0, 1.0, 0.0, 0.0,
-                                    0.0, 0.0, 1.0, 0.0,
-                                    0.0, 0.0, 0.0, 1.0};
-// GLfloat * currentRotationMatrix;
+GLfloat current_rotation[] = {1.0, 0.0, 0.0, 0.0,
+                              0.0, 1.0, 0.0, 0.0,
+                              0.0, 0.0, 1.0, 0.0,
+                              0.0, 0.0, 0.0, 1.0};
 bool normals = false;
 bool texture = true;
 //------------------
@@ -61,14 +60,15 @@ void computeEye() {
   float theta = acos(min(1.0f, oldEye*newEye));
   theta = theta*180/PI;
   Vec3f cross = oldEye^newEye;
+//  glLoadMatrixf(current_rotation);
+    glRotatef(theta, cross[0], cross[1], cross[2]);
 //  glMatrixMode(GL_MODELVIEW);
 //  glLoadIdentity();
 //  glLoadMatrixf(currentRotationMatrix);
 //  glMultMatrixf(currentRotationMatrix);
-  glRotatef(theta, cross[0], cross[1], cross[2]);
+
   // MultMatrix(currentRotationMatrix);
   // PrintMatrix(*currentRot      float model_view[16];
-//  glGetFloatv(GL_MODELVIEW_MATRIX, currentRotationMatrix);
 //  PrintMatrix(*currentRotationMatrix);
 //  oldEye = newEye;
 }
@@ -109,8 +109,20 @@ void Display() {
   glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
   glLightfv(GL_LIGHT0, GL_DIFFUSE, diff);
 
+  GLfloat light[] = {eye[0], eye[1], eye[2], 1};
+  if (!scene_lighting) {
+    glLightfv(GL_LIGHT0, GL_POSITION, light);
+  }
+  if (scene_lighting) {
+//    GLfloat x = mesh.bb().xdim();
+//    GLfloat y = mesh.bb().ydim();
+//    GLfloat z = mesh.bb().zdim();
+    // vector<GLfloat> light= {x, y, z, 1};
+//    glLightfv(GL_LIGHT0, GL_POSITION, light);
+  }
+
   if (!(oldEye == newEye)) {
-//    computeEye();
+    computeEye();
   }
 
   Vec3f center = mesh.bb().center();
@@ -119,18 +131,11 @@ void Display() {
   if (normals) {
     mesh.render_normals();
   }
-  // mesh.render_texture();
 
-  // TODO set up lighting, material properties and render mesh.
-  // Be sure to call glEnable(GL_RESCALE_NORMAL) so your normals
-  // remain normalized throughout transformations.
-  // You can leave the axis in if you like.
   glDisable(GL_LIGHTING);
   glLineWidth(4);
-  // translate camera and axis
   glTranslatef(center[0], center[1], center[2]);
   DrawAxis();
-  // glPopMatrix();
   glEnable(GL_LIGHTING);
 
   glFlush();
@@ -220,19 +225,23 @@ void MouseButton(int button, int state, int x, int y) {
   cout << button << " " << state << endl;
   if (button == GLUT_LEFT_BUTTON) {
     if (state == GLUT_DOWN) {
-    click = true;
-    oldEye = eyeVector(x, y);
+      click = true;
+      oldEye = eyeVector(x, y);
+      cout << "pre" << endl;
+      PrintMatrix(current_rotation);
     } else {
-      computeEye();
-      glGetFloatv(GL_MODELVIEW_MATRIX, currentRotationMatrix);
-      PrintMatrix(*currentRotationMatrix);
+      click = false;
+//      glLoadMatrixf(current_rotation);
+      glMultMatrixf(current_rotation);
     }
-  } else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
-    rclick = true;
-    zoomY = y;
-  } else {
-    click = false;
-    rclick = false;
+  } else if (button == GLUT_RIGHT_BUTTON) {
+    if (state == GLUT_DOWN) {
+      rclick = true;
+      zoomY = y;
+    } else {
+      rclick = false;
+    }
+    // implement mouse wheel
   }
   glutPostRedisplay();
 }
@@ -240,6 +249,11 @@ void MouseButton(int button, int state, int x, int y) {
 void MouseMotion(int x, int y) {
   if (click) {
     newEye = eyeVector(x, y);
+//    glMatrixMode(GL_MODELVIEW);
+//    computeEye();
+    glGetFloatv(GL_MODELVIEW_MATRIX, current_rotation);
+    cout << "motion" << endl;
+    PrintMatrix(current_rotation);
   }
   if (rclick) {
     if (zoomY > y) {
@@ -258,7 +272,6 @@ void Keyboard(unsigned char key, int x, int y) {
       eye = Vec3f::makeVec(mesh.bb().xdim(),
               mesh.bb().ydim(),
               mesh.bb().zdim());
-      cout << eye << endl;
       break;
     case 'n':
       normals = !normals;
