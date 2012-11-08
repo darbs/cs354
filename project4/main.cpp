@@ -18,7 +18,7 @@ Mesh mesh;
 
 GLuint* texture_ids;
 
-// camera controls
+// added vars
 bool click;
 bool rclick;
 float zoom = 1.01;
@@ -27,6 +27,8 @@ float otheta = 0.0;
 Vec3f eye;
 Vec3f oldEye;
 Vec3f newEye;
+float theta;
+Vec3f cross;
 GLfloat current_rotation[] = {1.0, 0.0, 0.0, 0.0,
                               0.0, 1.0, 0.0, 0.0,
                               0.0, 0.0, 1.0, 0.0,
@@ -57,26 +59,13 @@ Vec3f eyeVector(int x, int y) {
 }
 
 void computeEye() {
-  float theta = acos(min(1.0f, oldEye*newEye));
+  theta = acos(min(1.0f, oldEye*newEye));
   theta = theta*180/PI;
-  Vec3f cross = oldEye^newEye;
-//  glLoadMatrixf(current_rotation);
-    glRotatef(theta, cross[0], cross[1], cross[2]);
-//  glMatrixMode(GL_MODELVIEW);
-//  glLoadIdentity();
-//  glLoadMatrixf(currentRotationMatrix);
-//  glMultMatrixf(currentRotationMatrix);
-
-  // MultMatrix(currentRotationMatrix);
-  // PrintMatrix(*currentRot      float model_view[16];
-//  PrintMatrix(*currentRotationMatrix);
-//  oldEye = newEye;
+  cross = oldEye^newEye;
 }
 
 void SetCamera() {
-  // glTranslatef(center[0], center[1], center[2]);
   gluLookAt(eye[0], eye[1], eye[2],
-            // center[0], center[1], center[2],
           0, 0, 0,
           0, 1, 0);
   glutPostRedisplay();
@@ -90,18 +79,16 @@ void Display() {
   glLoadIdentity();
   gluPerspective(40.0, window_aspect, 1, 1500);
 
-  // TODO call gluLookAt such that mesh fits nicely in viewport.
-  // mesh.bb() may be useful.
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
   SetCamera();
   glEnable(GL_RESCALE_NORMAL);
-  // default light from material.cpp
 
+  // default light from material.cpp
   glShadeModel(GL_SMOOTH);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-  GLfloat spec[3] = {.1, .1, .1};
+  GLfloat spec[3] = {.5, .5, .5};
   GLfloat amb[3] = {.1, .1, .1};
   GLfloat diff[3] = {.3, .3, .3};
   glEnable(GL_LIGHT0);
@@ -109,20 +96,20 @@ void Display() {
   glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
   glLightfv(GL_LIGHT0, GL_DIFFUSE, diff);
 
-  GLfloat light[] = {eye[0], eye[1], eye[2], 1};
   if (!scene_lighting) {
+    GLfloat light[] = {eye[0], eye[1], eye[2], 1};
     glLightfv(GL_LIGHT0, GL_POSITION, light);
   }
-  if (scene_lighting) {
-//    GLfloat x = mesh.bb().xdim();
-//    GLfloat y = mesh.bb().ydim();
-//    GLfloat z = mesh.bb().zdim();
-    // vector<GLfloat> light= {x, y, z, 1};
-//    glLightfv(GL_LIGHT0, GL_POSITION, light);
-  }
 
-  if (!(oldEye == newEye)) {
-    computeEye();
+  glRotatef(theta, cross[0], cross[1], cross[2]);
+  glMultMatrixf(current_rotation);
+
+  if (scene_lighting) {
+    GLfloat x = mesh.bb().xdim();
+    GLfloat y = mesh.bb().ydim();
+    GLfloat z = mesh.bb().zdim();
+    const GLfloat  light[] = {x, y, z, 1};
+    glLightfv(GL_LIGHT0, GL_POSITION, light);
   }
 
   Vec3f center = mesh.bb().center();
@@ -222,17 +209,19 @@ void DrawAxis() {
 }
 
 void MouseButton(int button, int state, int x, int y) {
-  cout << button << " " << state << endl;
   if (button == GLUT_LEFT_BUTTON) {
     if (state == GLUT_DOWN) {
       click = true;
       oldEye = eyeVector(x, y);
-      cout << "pre" << endl;
-      PrintMatrix(current_rotation);
     } else {
       click = false;
-//      glLoadMatrixf(current_rotation);
+      glMatrixMode(GL_MODELVIEW);
+      glLoadIdentity();
+      glRotatef(theta, cross[0], cross[1], cross[2]);
       glMultMatrixf(current_rotation);
+      glGetFloatv(GL_MODELVIEW_MATRIX, current_rotation);
+      glMultMatrixf(current_rotation);
+      theta = 0.0;
     }
   } else if (button == GLUT_RIGHT_BUTTON) {
     if (state == GLUT_DOWN) {
@@ -241,7 +230,6 @@ void MouseButton(int button, int state, int x, int y) {
     } else {
       rclick = false;
     }
-    // implement mouse wheel
   }
   glutPostRedisplay();
 }
@@ -249,16 +237,12 @@ void MouseButton(int button, int state, int x, int y) {
 void MouseMotion(int x, int y) {
   if (click) {
     newEye = eyeVector(x, y);
-//    glMatrixMode(GL_MODELVIEW);
-//    computeEye();
-    glGetFloatv(GL_MODELVIEW_MATRIX, current_rotation);
-    cout << "motion" << endl;
-    PrintMatrix(current_rotation);
+    computeEye();
   }
   if (rclick) {
     if (zoomY > y) {
       eye /= zoom;
-    } else {
+    } else if (zoomY < y) {
       eye *= zoom;
     }
     zoomY = y;
@@ -323,7 +307,6 @@ int main(int argc, char *argv[]) {
     }
 
     // Parse the obj file, compute the normals, read the textures
-
     ParseObj(filename, mesh);
     mesh.compute_normals();
     eye[0] = mesh.bb().xdim();
@@ -337,8 +320,6 @@ int main(int argc, char *argv[]) {
       Material& material = mesh.material(i);
       material.LoadTexture(texture_ids[i]);
     }
-
-    // do the texture rendering
   }
 
   glutMainLoop();

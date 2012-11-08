@@ -66,8 +66,8 @@ void Mesh::render(bool texture, GLuint* texture_ids) {
     vector<int> polygon = _polygons[i];
     for (int j = 0; j < _polygons[i].size(); j++) {
       if (!_polygon_textures.empty() && texture) {
-        glTexCoord2d(_polygon_textures[i][j][0],
-              -_polygon_textures[i][j][1]);
+        glTexCoord2d(1.0-_polygon_textures[i][j][0],
+              1.0-_polygon_textures[i][j][1]);
       }
       // retrieve the vertex and normal
       Vec3f vertex = _vertices[polygon[j]][0];
