@@ -35,6 +35,7 @@ GLfloat current_rotation[] = {1.0, 0.0, 0.0, 0.0,
                               0.0, 0.0, 0.0, 1.0};
 bool normals = false;
 bool texture = true;
+bool axis = true;
 //------------------
 
 // window parameters
@@ -88,11 +89,13 @@ void Display() {
   glShadeModel(GL_SMOOTH);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-  GLfloat spec[3] = {.5, .5, .5};
-  GLfloat amb[3] = {.1, .1, .1};
-  GLfloat diff[3] = {.3, .3, .3};
+  GLfloat spec[4] = {.1, .1, .1, 1};
+  GLfloat amb[4] = {.1, .1, .1, 1};
+  GLfloat diff[4] = {.5, .5, .5, 1};
+  GLfloat c = 20.0;
   glEnable(GL_LIGHT0);
   glLightfv(GL_LIGHT0, GL_SPECULAR, spec);
+  glLightfv(GL_FRONT_AND_BACK, GL_SHININESS, &c);
   glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
   glLightfv(GL_LIGHT0, GL_DIFFUSE, diff);
 
@@ -122,7 +125,9 @@ void Display() {
   glDisable(GL_LIGHTING);
   glLineWidth(4);
   glTranslatef(center[0], center[1], center[2]);
-  DrawAxis();
+  if (axis) {
+    DrawAxis();
+  }
   glEnable(GL_LIGHTING);
 
   glFlush();
@@ -192,7 +197,7 @@ void Init() {
 
 void DrawAxis() {
   const Vec3f c = {0, 0, 0};
-  const float L = 1;
+  const float L = mesh.bb().xdim()/2;
   const Vec3f X = {L, 0, 0}, Y = {0, L, 0}, Z = {0, 0, L};
 
   glBegin(GL_LINES);
@@ -263,6 +268,9 @@ void Keyboard(unsigned char key, int x, int y) {
     case 't':
       texture = !texture;
       break;
+    case 'a':
+      axis = !axis;
+      break;
     case 'q':
     case 27:  // esc
       exit(0);
@@ -295,7 +303,19 @@ int main(int argc, char *argv[]) {
   Init();
 
   if (string(argv[1]) == "-s") {
-    cout << "Create scene" << endl;
+    ParseObj("data/original.obj", mesh);
+    mesh.compute_normals();
+    eye[0] = mesh.bb().xdim();
+    eye[1] = mesh.bb().ydim();
+    eye[2] = mesh.bb().zdim();
+
+    texture_ids = new GLuint[mesh.num_materials()];
+    glGenTextures(mesh.num_materials(), texture_ids);
+
+    for (int i = 0; i < mesh.num_materials(); ++i) {
+      Material& material = mesh.material(i);
+      material.LoadTexture(texture_ids[i]);
+    }
   } else {
     string filename(argv[1]);
     cout << filename << endl;

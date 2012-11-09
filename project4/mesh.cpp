@@ -126,7 +126,7 @@ void Mesh::compute_normals() {
   }
 }
 
-// delete added for testing
+// added for debugging
 vector< vector<Vec3f> > Mesh::get_vertices() {
   return _vertices;
 }

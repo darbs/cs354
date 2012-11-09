@@ -83,7 +83,7 @@ class Mesh {
 
   void lighting(int i);
 
-  // delete added for testing
+  // added for debugging
   vector< vector<Vec3f> > get_vertices();
   vector<Vec3f> get_textures();
   vector< vector<int> > get_polygons();
@@ -96,6 +96,7 @@ class Mesh {
   std::vector<Vec3f> _textures;
   std::vector< vector<int> > _polygons;
   std::vector< vector<Vec3f> > _polygon_textures;
+  //
 
   std::vector<Material> _materials;
   std::vector<int> _polygon2material;
